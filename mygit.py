@@ -1,6 +1,7 @@
 import os
 import hashlib
 import zlib
+import time
 
 
 def init():
@@ -27,10 +28,6 @@ def init():
         f.write("refs/master")  # initial branch is master
 
     print("Repository '.mygit/' created successfully!")
-
-if __name__ == "__main__":
-    # Run the initialization only when executing the script directly
-    init()
 
 
 def hash_object(file_path):
@@ -75,3 +72,82 @@ def add(file_path):
         index.write(f"{sha1} {file_path}\n")
     
     print(f"File '{file_path}' staged for commit.")
+
+
+def commit(files_hashes, message):
+    """
+    Create a commit object.
+
+    files_hashes: list of SHA-1 hashes of added files (blobs)
+    message: commit message
+    """
+    # Step 1: Create a tree object (a simple string of file hashes)
+    tree_content = "\n".join(files_hashes)
+    tree_hash = hashlib.sha1(tree_content.encode()).hexdigest()
+    
+    # Save the tree object
+    with open(f".mygit/objects/{tree_hash}", "wb") as f:
+        f.write(zlib.compress(tree_content.encode()))
+
+    # Step 2: Prepare commit data
+    parent_hash = None
+    branch_ref = ".mygit/refs/master"
+    if os.path.exists(branch_ref):
+        with open(branch_ref, "r") as f:
+            parent_hash = f.read().strip()
+    
+    commit_data = f"tree {tree_hash}\n"
+    if parent_hash:
+        commit_data += f"parent {parent_hash}\n"
+    commit_data += f"date {int(time.time())}\nmessage {message}"
+
+    # Step 3: Compute commit hash and save
+    commit_hash = hashlib.sha1(commit_data.encode()).hexdigest()
+    with open(f".mygit/objects/{commit_hash}", "wb") as f:
+        f.write(zlib.compress(commit_data.encode()))
+
+    # Step 4: Update branch reference
+    with open(branch_ref, "w") as f:
+        f.write(commit_hash)
+    
+    print(f"Commit created: {commit_hash}")
+    return commit_hash
+
+
+if __name__ == "__main__":
+    # Step 1: Initialize the repository
+    init()
+
+    # Step 2: Example files to add (create them if they don't exist)
+    test_files = ["file1.txt", "file2.txt"]
+
+    for file in test_files:
+        if not os.path.exists(file):
+            with open(file, "w") as f:
+                f.write(f"Contents of {file}")
+
+    # Step 3: Stage files using add()
+    for file in test_files:
+        add(file)
+
+    # Step 4: Show current index content
+    index_path = ".mygit/index"
+    if os.path.exists(index_path):
+        print("\nCurrent staged files (index):")
+        with open(index_path, "r") as f:
+            print(f.read())
+
+        # Step 5: Read staged file hashes for commit
+        files_hashes = []
+        with open(index_path, "r") as f:
+            for line in f:
+                sha1, path = line.strip().split(" ", 1)
+                files_hashes.append(sha1)
+
+        # Step 6: Create the commit
+        commit_hash = commit(files_hashes, "Initial commit")
+
+        # Step 7: Clear the index after commit
+        os.remove(index_path)
+        print("Index cleared after commit.")
+    
