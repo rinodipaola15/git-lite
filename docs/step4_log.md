@@ -23,7 +23,6 @@ Implement a simplified version of `git log`:
 log()
 ```
 
-
 ## Notes
 - The log function prints commits from most recent to oldest.
 - Only the current branch (master) is supported in this simplified version.

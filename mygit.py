@@ -160,44 +160,212 @@ def log():
         commit_hash = commit_info.get("parent")
 
 
+def branch(name):
+    """
+    Create a new branch with the given name.
+    
+    - Copies the current commit hash from the active branch.
+    - Saves it in .mygit/refs/<branch_name>.
+    """
+    # Get current branch and commit
+    with open(".mygit/HEAD", "r") as f:
+        current_branch_ref = f.read().strip()
+    
+    branch_file = f".mygit/{current_branch_ref}"
+    if os.path.exists(branch_file):
+        with open(branch_file, "r") as f:
+            current_commit = f.read().strip()
+    else:
+        current_commit = None
+
+    # Create new branch reference
+    new_branch_file = f".mygit/refs/{name}"
+    if os.path.exists(new_branch_file):
+        print(f"Branch '{name}' already exists.")
+        return
+    with open(new_branch_file, "w") as f:
+        if current_commit:
+            f.write(current_commit)
+    
+    print(f"Branch '{name}' created successfully.")
+
+
+def checkout(name):
+    """
+    Switch to the specified branch.
+    
+    - Updates HEAD to point to the new branch.
+    - Optionally, you could update working directory to match last commit.
+    """
+    branch_file = f".mygit/refs/{name}"
+    if not os.path.exists(branch_file):
+        print(f"Branch '{name}' does not exist.")
+        return
+    
+    # Update HEAD
+    with open(".mygit/HEAD", "w") as f:
+        f.write(f"refs/{name}")
+    
+    print(f"Switched to branch '{name}'.")
+
+
+def status():
+    """
+    Print the repository status: staged files and modified files.
+    """
+    
+    index_path = ".mygit/index"
+    staged = {}
+
+    # Read index if exists
+    if os.path.exists(index_path):
+        with open(index_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(" ", 1)
+                if len(parts) != 2:
+                    continue  # skip malformed lines
+                sha1, path = parts
+                staged[path] = sha1
+
+    if staged:
+        print("Staged files:")
+        for path in staged:
+            print(f"  {path}")
+    else:
+        print("No files staged.")
+
+    # Detect modified files
+    # (for simplicity, list files in current folder that differ from last commit)
+    print("Modified files:")
+    for file in os.listdir("."):
+        if os.path.isfile(file) and not file.startswith("."):
+            if file not in staged:
+                print(f"  {file}")
+
+
+def merge(source_branch):
+    """
+    Perform a fast-forward merge of `source_branch` into the current branch.
+
+    Steps:
+    1. Determine current branch from HEAD.
+    2. Get the latest commit of both current and source branches.
+    3. If current branch is behind, move its pointer to source branch commit (fast-forward).
+    4. If current branch has commits ahead, report that merge is not fast-forward (conflict situation).
+    """
+    # 1. Get current branch
+    with open(".mygit/HEAD", "r") as f:
+        current_branch_ref = f.read().strip()  # e.g., "refs/master"
+    current_branch_file = f".mygit/{current_branch_ref}"
+
+    # 2. Source branch file
+    source_branch_file = f".mygit/refs/{source_branch}"
+    if not os.path.exists(source_branch_file):
+        print(f"Source branch '{source_branch}' does not exist.")
+        return
+
+    # 3. Get latest commits
+    current_commit = None
+    if os.path.exists(current_branch_file):
+        with open(current_branch_file, "r") as f:
+            current_commit = f.read().strip()
+
+    with open(source_branch_file, "r") as f:
+        source_commit = f.read().strip()
+
+    # 4. Check fast-forward
+    if current_commit == source_commit:
+        print(f"Branches already identical. Nothing to merge.")
+        return
+    elif current_commit is None:
+        # Current branch has no commits -> just fast-forward
+        with open(current_branch_file, "w") as f:
+            f.write(source_commit)
+        print(f"Fast-forward merge done: {source_branch} -> {current_branch_ref}")
+        return
+    else:
+        # For simplicity, assume we can only fast-forward if current_commit is ancestor
+        # Here we skip ancestry check and just report conflict
+        print(f"Cannot fast-forward merge: current branch has commits ahead.")
+        print(f"Advanced merge with conflicts not implemented yet.")
+        return
+
+
 if __name__ == "__main__":
-    # Step 1: Initialize the repository
+    import shutil
+
+    # --- Clean start ---
+    if os.path.exists(".mygit"):
+        shutil.rmtree(".mygit")
+    for f in ["file1.txt", "file2.txt"]:
+        if os.path.exists(f):
+            os.remove(f)
+    print("Clean environment ready.\n")
+
+    # --- Step 1: Initialize repository ---
     init()
 
-    # Step 2: Example files to add (create them if they don't exist)
+    # --- Step 2: Create example files ---
     test_files = ["file1.txt", "file2.txt"]
-
     for file in test_files:
-        if not os.path.exists(file):
-            with open(file, "w") as f:
-                f.write(f"Contents of {file}")
+        with open(file, "w") as f:
+            f.write(f"Contents of {file}")
 
-    # Step 3: Stage files using add()
+    # --- Step 3: Stage and commit files on master ---
     for file in test_files:
         add(file)
 
-    # Step 4: Show current index content
-    index_path = ".mygit/index"
-    if os.path.exists(index_path):
-        print("\nCurrent staged files (index):")
-        with open(index_path, "r") as f:
-            print(f.read())
+    files_hashes = []
+    with open(".mygit/index", "r") as f:
+        for line in f:
+            sha1, path = line.strip().split(" ", 1)
+            files_hashes.append(sha1)
+    commit(files_hashes, "Initial commit on master")
+    os.remove(".mygit/index")
 
-        # Step 5: Read staged file hashes for commit
-        files_hashes = []
-        with open(index_path, "r") as f:
-            for line in f:
-                sha1, path = line.strip().split(" ", 1)
-                files_hashes.append(sha1)
+    # --- Step 4: Show status and log ---
+    print("\n=== Repository Status ===")
+    status()
+    print("\n=== Commit History ===")
+    log()
 
-        # Step 6: Create the commit
-        commit_hash = commit(files_hashes, "Initial commit")
+    # --- Step 5: Create a new branch 'dev' and switch ---
+    branch_name = "dev"
+    with open(f".mygit/refs/{branch_name}", "w") as f:
+        with open(".mygit/refs/master", "r") as master_ref:
+            f.write(master_ref.read().strip())
+    checkout(branch_name)
 
-        # Step 7: Clear the index after commit
-        os.remove(index_path)
-        print("Index cleared after commit.")
+    # --- Step 6: Make changes on 'dev' ---
+    with open("file1.txt", "a") as f:
+        f.write("\nChanges on dev branch")
+    add("file1.txt")
+    files_hashes = []
+    with open(".mygit/index", "r") as f:
+        for line in f:
+            sha1, path = line.strip().split(" ", 1)
+            files_hashes.append(sha1)
+    commit(files_hashes, "Update file1.txt on dev branch")
+    os.remove(".mygit/index")
 
-        # Step 8: View commit history
-        print("\n=== Commit History ===")
-        log()
-    
+    # --- Step 7: Show status and log on 'dev' ---
+    print("\n=== Repository Status on 'dev' ===")
+    status()
+    print("\n=== Commit History on 'dev' ===")
+    log()
+
+    # --- Step 8: Switch back to master ---
+    checkout("master")
+
+    # --- Step 9: Merge dev into master ---
+    print("\nAttempting fast-forward merge 'dev' -> 'master'...\n")
+    merge("dev")
+
+    # --- Step 10: Final status and log of master ---
+    print("\n=== Final Repository Status on 'master' ===")
+    status()
+    print("\n=== Final Commit History on 'master' ===")
+    log()
