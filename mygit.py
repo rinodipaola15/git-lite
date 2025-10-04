@@ -114,6 +114,52 @@ def commit(files_hashes, message):
     return commit_hash
 
 
+def log():
+    """
+    Print the commit history of the current branch (master).
+    """
+    # Step 1: Get current branch from HEAD
+    with open(".mygit/HEAD", "r") as f:
+        branch_ref = f.read().strip()  # e.g., refs/master
+
+    branch_file = f".mygit/{branch_ref}"
+    if not os.path.exists(branch_file):
+        print("No commits yet.")
+        return
+
+    # Step 2: Start from last commit
+    with open(branch_file, "r") as f:
+        commit_hash = f.read().strip()
+
+    # Step 3: Traverse commit chain
+    while commit_hash:
+        obj_path = f".mygit/objects/{commit_hash}"
+        with open(obj_path, "rb") as f:
+            data = zlib.decompress(f.read()).decode()
+
+        # Parse commit fields
+        lines = data.split("\n")
+        commit_info = {}
+        for line in lines:
+            if line.startswith("tree "):
+                commit_info["tree"] = line[5:]
+            elif line.startswith("parent "):
+                commit_info["parent"] = line[7:]
+            elif line.startswith("date "):
+                commit_info["date"] = line[5:]
+            elif line.startswith("message "):
+                commit_info["message"] = line[8:]
+
+        # Print commit info
+        print(f"Commit: {commit_hash}")
+        print(f"Date: {time.ctime(int(commit_info.get('date', '0')))}")
+        print(f"Message: {commit_info.get('message','')}")
+        print("-" * 40)
+
+        # Move to parent commit
+        commit_hash = commit_info.get("parent")
+
+
 if __name__ == "__main__":
     # Step 1: Initialize the repository
     init()
@@ -150,4 +196,8 @@ if __name__ == "__main__":
         # Step 7: Clear the index after commit
         os.remove(index_path)
         print("Index cleared after commit.")
+
+        # Step 8: View commit history
+        print("\n=== Commit History ===")
+        log()
     

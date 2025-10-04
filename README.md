@@ -12,7 +12,7 @@ It is developed step by step, focusing on learning how files, commits, branches,
   - `objects/` : stores file contents (blobs) and commits
   - `refs/` : stores branch references
   - `HEAD` : points to the current branch
-- `docs/` : step-by-step documentation for each feature, in Markdown
+- `docs/` : step-by-step documentation for each feature
 - `README.md` : this file
 
 ## Getting started
