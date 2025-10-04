@@ -1,5 +1,6 @@
 # GitLite
 
+
 ## 🗂️ Overview
 
 A minimal Git-like version control system for learning purposes.
@@ -7,7 +8,9 @@ A minimal Git-like version control system for learning purposes.
 This project is designed to help understand the **core internal mechanics** of version control systems like Git — how files are tracked, staged, committed, branched, and merged.  
 It is built **step by step**, focusing on clarity and conceptual learning rather than performance or completeness.
 
+
 ---
+
 
 ## 🧩 Project structure
 
@@ -20,6 +23,7 @@ project/
 ├── objects/ # Stores file contents (blobs) and commits
 ├── refs/ # Contains branch references (e.g. master, dev)
 └── HEAD # Points to the current branch or commit
+
 
 ## 🚀 Getting started
 
@@ -42,6 +46,7 @@ By default, it will:
 
 ---
 
+
 ## 🧠 Core Concepts
 
 GitLite mimics Git’s main internal components:
@@ -54,6 +59,7 @@ GitLite mimics Git’s main internal components:
 | **Branch** | A movable pointer to a specific commit (e.g. `refs/master`). |
 | **HEAD** | Reference to the current branch or commit. |
 | **Fast-forward merge** | A simple merge where the target branch moves its pointer forward to the latest commit. |
+
 
 ## ⚙️ Implemented Commands
 
@@ -68,7 +74,8 @@ GitLite mimics Git’s main internal components:
 | `status()` | Shows staged and modified files. |
 | `merge()` | Performs a fast-forward merge when possible. |
 
-## Example Flow
+
+## 🧪 Example Flow
 
 ```python
 # Initialize a new repo
@@ -96,7 +103,8 @@ log()
 status()
 ```
 
-## Next Steps
+
+## 🧭 Next Steps
 
 GitLite currently supports the **core workflow** of Git (init → add → commit → branch → merge).  
 Planned or possible extensions include:
@@ -108,7 +116,8 @@ Planned or possible extensions include:
 - 🌐 **Remote / Push / Pull** (multi-repository synchronization)
 - 🔍 **Diff** (compare file states)
 
-## Author
+
+## 👤 Author
 
 Developed by **Rino Di Paola**  
 Created as an educational project to explore how Git works under the hood.
