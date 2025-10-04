@@ -11,15 +11,17 @@ It is built **step by step**, focusing on clarity and conceptual learning rather
 
 ## 🧩 Project structure
 
+```plaintext
 project/
 │
-├── mygit.py # Main Python script implementing all GitLite commands
-├── docs/ # Step-by-step explanations of each feature
-├── README.md # Project documentation (this file)
-└── .mygit/ # Hidden folder automatically created by init()
-├── objects/ # Stores file contents (blobs) and commits
-├── refs/ # Contains branch references (e.g. master, dev)
-└── HEAD # Points to the current branch or commit
+├── mygit.py             # Main Python script implementing all commands
+├── docs/                # Step-by-step explanations of each feature
+├── README.md            # Project documentation (this file)
+└── .mygit/              # Hidden folder automatically created by init()
+    ├── objects/         # Stores file contents (blobs) and commits
+    ├── refs/            # Contains branch references (e.g. master, dev)
+    └── HEAD             # Points to the current branch or commit
+```
 
 ## 🚀 Getting started
 
